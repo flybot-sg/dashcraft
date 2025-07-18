@@ -8,8 +8,8 @@
     display: flex;
 }
 
-.malli-editor-btn a:link,
-.malli-editor-btn a:visited {
+.malli-editor-btn span {
+    cursor: pointer;
     color: white;
     text-decoration: none;
     padding-left: 0.5em;

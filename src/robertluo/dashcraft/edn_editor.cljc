@@ -123,7 +123,7 @@
 
 (defn btn [text on-click]
   [:div.malli-editor-btn
-   [:a {:href "#" :on {:click on-click}}
+   [:span {:on {:click on-click}}
     text]])
 
 (defn btn-plus [on-click]
