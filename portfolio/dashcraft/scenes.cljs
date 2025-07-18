@@ -7,8 +7,7 @@
    [robertluo.dashcraft.edn-editor :as ee]
    [robertluo.dashcraft.form :as form]
    [robertluo.dashcraft.loading :as loading]
-   [robertluo.dashcraft.error-aware :as error-aware]
-   [replicant.dom :as r]))
+   [robertluo.dashcraft.error-aware :as error-aware]))
 
 (defscene simple-chart
   :params (atom {:columns [:product "2015" "2016"],
@@ -104,6 +103,24 @@
                      [:vector :string]]]
      [:metadata [:map-of :keyword :string]]
      [:foo [:tuple :int :string :boolean]]]
+    ::ee/value @state
+    ::ee/on-change (fn [v] (prn (reset! state v)))}])
+
+(defscene edn-editor
+  :params (atom {:type :human
+                 :name "bob"
+                 :pet '("dog" "cat")
+                 :favourite-color #{"red" "green" "blue"}})
+  [state]
+  [ee/editor
+   {::ee/schema
+    [:multi {:dispatch :type}
+     [:sized [:map [:type [:= :sized]]
+              [:size [:and :int [:fn pos-int?]]]]]
+     [:human [:map [:type [:= :human]]
+              [:name :string]
+              [:pet [:sequential :string]]
+              [:favourite-color [:set :string]]]]]
     ::ee/value @state
     ::ee/on-change (fn [v] (prn (reset! state v)))}])
 

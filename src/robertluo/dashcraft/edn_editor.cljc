@@ -4,6 +4,7 @@
   Copy from https://github.com/opqdonut/malli-edn-editor/blob/main/src/editor.cljs
   Many thanks to @opqdonut"
   (:require
+   [clojure.edn :as edn]
    [malli.core :as m]
    [malli.transform :as mt]
    [malli.util :as mu]
@@ -16,13 +17,17 @@
                           (when schema
                             (:type (m/ast schema)))))
 
-(defmethod default-value :default [_] nil)
-(defmethod default-value :string  [_] "")
-(defmethod default-value :keyword [_] (->> (rand-int 1000) (str "keyword") keyword))
-(defmethod default-value :vector  [_] [])
-(defmethod default-value :boolean [_] (even? (rand-int 2)))
-(defmethod default-value :int     [_] (rand-int 1000))
-(defmethod default-value :double  [_] (rand))
+(defmethod default-value :default    [_] nil)
+(defmethod default-value :string     [_] "")
+(defmethod default-value :keyword    [_] (->> (rand-int 1000) (str "keyword") keyword))
+(defmethod default-value :vector     [_] [])
+(defmethod default-value :sequential [_] [])
+(defmethod default-value :set        [_] #{})
+(defmethod default-value :boolean    [_] (even? (rand-int 2)))
+(defmethod default-value :int        [_] (rand-int 1000))
+(defmethod default-value :double     [_] (rand))
+
+(defmethod default-value := [schema] (first (m/children schema)))
 
 (defmethod default-value :map [schema]
   (into {}
@@ -32,6 +37,9 @@
               (m/children schema))))
 
 (defmethod default-value :map-of [_] {})
+
+(defmethod default-value :and [schema]
+  (default-value (first (m/children schema))))
 
 (defmethod default-value :or [schema]
   (default-value (first (m/children schema))))
@@ -67,13 +75,16 @@
    [:p (pr-str (m/ast schema))]
    [:p (pr-str value)]])
 
- ;; TODO validation errors
+;; TODO validation errors
 (defn input-field [schema value on-change]
   (let [valid? (m/validate schema value)]
     [:input {:type :text
              :class (when-not valid? :malli-editor-invalid)
              :default-value (m/encode schema value mt/string-transformer)
              :on {:change #(on-change (m/decode schema (-> % .-target .-value) mt/string-transformer))}}]))
+
+(defmethod edit := [_ value _]
+  [:div (pr-str value)])
 
 (defmethod edit :string [schema value on-change]
   [:div.malli-editor-string "\"" (input-field schema value on-change) "\""])
@@ -96,7 +107,7 @@
 
 (defmethod edit :enum [schema value on-change]
   [:div.malli-editor-enum
-   (into [:select {:on {:change #(on-change (-> % .-target .-value))}}]
+   (into [:select {:on {:change #(on-change (-> % .-target .-value edn/read-string))}}]
          (for [v (m/children schema)]
            [:option {:selected (= value v)}
             (pr-str v)]))])
@@ -177,6 +188,36 @@
 (defn- dissocv [v i]
   (into (subvec v 0 i) (subvec v (inc i))))
 
+(defn sequential-remove-at
+  "Removes an item at index `idx` from a sequential collection `coll`,
+  preserving the original collection type."
+  [coll idx]
+  (cond
+    (vector? coll)
+    (dissocv coll idx)
+
+    (list? coll)
+    (keep-indexed #(when-not (= idx %1) %2) coll)))
+
+(defn sequential-update-at
+  "Updates an item at index `idx` with value `val` in a sequential
+  collection `coll`, preserving the original collection type."
+  [coll idx val]
+  (cond
+    (vector? coll)
+    (assoc coll idx val)
+
+    (list? coll)
+    (apply list (assoc (vec coll) idx val))))
+
+(defn sequential-add
+  "Adds an item `val` to the sequential collection `coll`,
+  preserving the original collection type."
+  [coll val]
+  (cond
+    (vector? coll) (conj coll val)
+    (list? coll) (concat coll (list val))))
+
 (defmethod edit :tuple [schema value on-change]
   [:div.malli-editor-tuple
    (bracket "[" "]"
@@ -195,6 +236,36 @@
                              (edit (mu/get schema i) v #(on-change (assoc value i %)))])
                           value)
              (btn-plus #(on-change (conj (or value []) (default-value (mu/get schema 0)))))])])
+
+(defmethod edit :sequential [schema value on-change]
+  [:div.malli-editor-sequential
+   (bracket (if (list? value) "(" "[")
+            (if (list? value) ")" "]")
+            [:div
+             (map-indexed (fn [i v]
+                            [:div {:style {:display :flex}}
+                             (btn-minus #(on-change (sequential-remove-at value i)))
+                             (edit (mu/get schema i) v #(on-change (sequential-update-at value i %)))])
+                          value)
+             (btn-plus #(on-change (sequential-add (or value []) (default-value (mu/get schema 0)))))])])
+
+(defmethod edit :set [schema value on-change]
+  [:div.malli-editor-set
+   (bracket "#{" "}"
+            [:div
+             (map (fn [v]
+                    [:div {:style {:display :flex}}
+                     (btn-minus #(on-change (disj value v)))
+                     (edit (mu/get schema 0) v #(on-change (-> value (disj v) (conj %))))])
+                  value)
+             (btn-plus #(on-change (conj (or value #{}) (default-value (mu/get schema 0)))))])])
+
+(defmethod edit :and [schema value on-change]
+  (let [primary-schema (first (m/children schema))
+        valid? (m/validate schema value)]
+    [:div.malli-editor-and
+     {:class (when-not valid? :malli-editor-invalid)}
+     (edit primary-schema value on-change)]))
 
 (defmethod edit :orn [schema value on-change]
   (let [nom (name (gensym "orn-schema"))
@@ -224,21 +295,44 @@
                    {:schema c
                     :valid (m/validate c value)
                     :label (pr-str (:type (m/ast c)))})
-        first-valid (first (filter :valid children))]
+        selected (or (first (filter :valid children))
+                     (first children))]
     [:div.malli-editor-or
      (into [:div.malli-editor-or-choices ";;"]
            (for [c children]
              (let [id (str nom "--" (:label c))]
                [:div
                 [:input {:type :radio :id id :name nom
-                         :checked (:valid c)
-                         :on {:change (if (:valid c)
+                         :checked (= selected c)
+                         :on {:change (if (= selected c)
                                         (constantly nil) ;; silence reagent warning by always having a callback
                                         #(on-change (default-value (:schema c))))}}]
                 [:label {:for id} (:label c)]])))
-     (if first-valid
-       (edit (:schema first-valid) value on-change)
-       [:p (pr-str value)])]))
+     (when selected
+       (edit (:schema selected) value on-change))]))
+
+(defmethod edit :multi [schema value on-change]
+  (let [nom (name (gensym "multi-schema"))
+        dispatch-key (:dispatch (m/properties schema))
+        children (for [[dispatch _ schema] (m/children schema)]
+                   {:dispatch dispatch
+                    :schema schema
+                    :label (pr-str dispatch)
+                    :selected (= dispatch (dispatch-key value))})
+        selected (first (filter :selected children))]
+    [:div.malli-editor-multi
+     (into [:div.malli-editor-multi-choices ";;"]
+           (for [c children]
+             (let [id (str nom "--" (:label c))]
+               [:div
+                [:input {:type :radio :id id :name nom
+                         :checked (:selected c)
+                         :on {:change (if (:selected c)
+                                        (constantly nil)
+                                        #(on-change (default-value (:schema c))))}}]
+                [:label {:for id} (:label c)]])))
+     (when selected
+       (edit (:schema selected) value on-change))]))
 
 (defmethod edit :schema [schema value on-change]
   (edit (m/deref schema) value on-change))

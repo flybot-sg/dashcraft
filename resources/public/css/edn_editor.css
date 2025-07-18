@@ -2,8 +2,10 @@
 
 .malli-editor-or-choices,
 .malli-editor-orn-choices,
+.malli-editor-multi-choices,
 .malli-editor-extra-keys-title {
     color: #8f8dac;
+    display: flex;
 }
 
 .malli-editor-btn a:link,
@@ -30,7 +32,7 @@
 }
 
 .malli-editor-invalid {
-    background: #fc9483
+    background: #fc9483;
 }
 
 .malli-editor select {
