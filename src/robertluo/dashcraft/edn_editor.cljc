@@ -47,6 +47,9 @@
 (defmethod default-value :orn [schema]
   (default-value (last (first (m/children schema)))))
 
+(defmethod default-value :multi [schema]
+  (default-value (last (first (m/children schema)))))
+
 (defmethod default-value :enum [schema]
   (first (m/children schema)))
 
