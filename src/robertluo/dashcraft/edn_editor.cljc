@@ -202,6 +202,33 @@
     (list? coll)
     (keep-indexed #(when-not (= idx %1) %2) coll)))
 
+^:rct/test
+(comment
+  (sequential-remove-at [1 2 3 4] 1)
+  ;=> [1 3 4]
+
+  (sequential-remove-at [1 2 3 4] 0)
+  ;=> [2 3 4]
+
+  (sequential-remove-at [1 2 3 4] 3)
+  ;=> [1 2 3]
+
+  (sequential-remove-at [1] 0)
+  ;=> []
+
+  (sequential-remove-at '(1 2 3 4) 1)
+  ;=> '(1 3 4)
+
+  (sequential-remove-at '(1 2 3 4) 0)
+  ;=> '(2 3 4)
+
+  (sequential-remove-at '(1 2 3 4) 3)
+  ;=> '(1 2 3)
+
+  (sequential-remove-at '(1) 0)
+  ;=> '()
+  )
+
 (defn sequential-update-at
   "Updates an item at index `idx` with value `val` in a sequential
   collection `coll`, preserving the original collection type."
@@ -213,6 +240,27 @@
     (list? coll)
     (apply list (assoc (vec coll) idx val))))
 
+^:rct/test
+(comment
+  (sequential-update-at [1 2 3] 1 :x)
+  ;=> [1 :x 3]
+
+  (sequential-update-at [1 2 3] 0 :x)
+  ;=> [:x 2 3]
+
+  (sequential-update-at [1 2 3] 2 :x)
+  ;=> [1 2 :x]
+
+  (sequential-update-at '(1 2 3) 1 :x)
+  ;=> '(1 :x 3)
+
+  (sequential-update-at '(1 2 3) 0 :x)
+  ;=> '(:x 2 3)
+
+  (sequential-update-at '(1 2 3) 2 :x)
+  ;=> '(1 2 :x)
+  )
+
 (defn sequential-add
   "Adds an item `val` to the sequential collection `coll`,
   preserving the original collection type."
@@ -220,6 +268,21 @@
   (cond
     (vector? coll) (conj coll val)
     (list? coll) (concat coll (list val))))
+
+^:rct/test
+(comment
+  (sequential-add [1 2] 3)
+  ;=> [1 2 3]
+
+  (sequential-add [] 1)
+  ;=> [1]
+
+  (sequential-add '(1 2) 3)
+  ;=> '(1 2 3)
+
+  (sequential-add '() 1)
+  ;=> '(1)
+  )
 
 (defmethod edit :tuple [schema value on-change]
   [:div.malli-editor-tuple
