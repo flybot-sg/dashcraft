@@ -380,7 +380,8 @@
 (defmethod edit :multi [schema value on-change]
   (let [nom (name (gensym "multi-schema"))
         dispatch-key (:dispatch (m/properties schema))
-        children (for [[dispatch _ schema] (m/children schema)]
+        children (for [[dispatch _ schema] (m/children schema)
+                       :when (not= ::m/default dispatch)]
                    {:dispatch dispatch
                     :schema schema
                     :label (pr-str dispatch)

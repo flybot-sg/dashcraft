@@ -115,9 +115,12 @@
   [ee/editor
    {::ee/schema
     [:multi {:dispatch :type}
-     [:sized [:map [:type [:= :sized]]
+     [:malli.core/default [:map [:type [:enum :sized :human]]]]
+     [:sized [:map
+              [:type [:= :sized]]
               [:size [:and :int [:fn pos-int?]]]]]
-     [:human [:map [:type [:= :human]]
+     [:human [:map
+              [:type [:= :human]]
               [:name :string]
               [:pet [:sequential :string]]
               [:favourite-color [:set :string]]]]]
