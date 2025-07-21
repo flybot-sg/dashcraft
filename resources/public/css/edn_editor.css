@@ -43,3 +43,26 @@
 .malli-editor-example h2 {
     font-family: monospace;
 }
+
+.malli-editor-maybe,
+.malli-editor-brackets,
+.malli-editor-key-value,
+.malli-editor-set-elements,
+.malli-editor-vector-elements,
+.malli-editor-sequential-elements,
+.malli-editor-extra-keys-elements {
+    display: flex;
+}
+
+.malli-editor-bracket-close {
+    align-self: flex-end;
+}
+
+.malli-editor-value {
+    margin-left: 0.5em;
+}
+
+.malli-editor-add-keys {
+    display: flex;
+    flex-flow: row wrap;
+}

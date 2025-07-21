@@ -29,6 +29,8 @@
 
 (defmethod default-value := [schema] (first (m/children schema)))
 
+(defmethod default-value :maybe [schema] (default-value (first (m/children schema))))
+
 (defmethod default-value :map [schema]
   (into {}
         (keep (fn [[k properties value]]
@@ -116,10 +118,10 @@
             (pr-str v)]))])
 
 (defn bracket [open close contents]
-  [:div.malli-editor-brackets {:style {:display :flex}}
+  [:div.malli-editor-brackets
    [:div.malli-editor-bracket-open open]
    [:div.malli-editor-bracket-contents contents]
-   [:div.malli-editor-bracket-close {:style {:align-self :flex-end}} close]])
+   [:div.malli-editor-bracket-close close]])
 
 (defn btn [text on-click]
   [:div.malli-editor-btn
@@ -134,7 +136,7 @@
 
 (defmethod edit :maybe [schema value on-change]
   (let [child (first (m/children schema))]
-    [:div.malli-editor-maybe {:style {:display :flex}}
+    [:div.malli-editor-maybe
      (if (nil? value)
        (btn-plus #(on-change (default-value child)))
        [:div (btn-minus #(on-change nil)) (edit child value on-change)])]))
@@ -152,14 +154,14 @@
               [:div
                (for [k present-keys]
                  (let [[_ properties value-schema] (mu/find schema k)]
-                   [:div.malli-editor-key-value {:style {:display :flex}}
+                   [:div.malli-editor-key-value
                     [:div.malli-editor-key (pr-str k)]
                     (when (:optional properties)
                       (btn-minus #(on-change (dissoc value k))))
                     (when-let [[_ v] (find value k)]
-                      [:div.malli-editor-value {:style {:margin-left "0.5em"}}
+                      [:div.malli-editor-value
                        (edit value-schema v #(on-change (assoc value k %)))])]))
-               [:div.malli-editor-add-keys {:style {:display :flex :flex-flow "row wrap"}}
+               [:div.malli-editor-add-keys
                 (for [k missing-keys]
                   (let [value-schema (mu/get schema k)]
                     (btn (str "<+" (pr-str k) ">") #(on-change (assoc value k (default-value value-schema))))))]
@@ -167,10 +169,10 @@
                  [:div.malli-editor-extra-keys
                   [:div.malli-editor-extra-keys-title ";; extra keys:"]
                   (for [[k v] extra-value]
-                    [:div {:style {:display :flex}}
+                    [:div.malli-editor-extra-keys-elements
                      [:div.malli-editor-key (pr-str k)]
                      (btn-minus #(on-change (dissoc value k)))
-                     [:div.malli-editor-value {:style {:margin-left "0.5em"}}
+                     [:div.malli-editor-value
                       (pr-str v)]])])])]))
 
 (defmethod edit :map-of [schema value on-change]
@@ -179,11 +181,11 @@
      (bracket "{" "}"
               [:div
                (for [[k v] value]
-                 [:div.malli-editor-key-value {:style {:display :flex}}
+                 [:div.malli-editor-key-value
                   (btn-minus #(on-change (dissoc value k)))
                   [:div.malli-editor-key
                    (edit key-schema k #(on-change (-> value (dissoc k) (assoc % v))))]
-                  [:div.malli-editor-value {:style {:margin-left "0.5em"}}
+                  [:div.malli-editor-value
                    (edit value-schema v #(on-change (assoc value k %)))]])
                ;; TODO what to do when key is already taken?
                (btn-plus #(on-change (assoc value (default-value key-schema) (default-value value-schema))))])]))
@@ -297,7 +299,7 @@
    (bracket "[" "]"
             [:div
              (map-indexed (fn [i v]
-                            [:div {:style {:display :flex}}
+                            [:div.malli-editor-vector-elements
                              (btn-minus #(on-change (dissocv value i)))
                              (edit (mu/get schema i) v #(on-change (assoc value i %)))])
                           value)
@@ -309,7 +311,7 @@
             (if (list? value) ")" "]")
             [:div
              (map-indexed (fn [i v]
-                            [:div {:style {:display :flex}}
+                            [:div.malli-editor-sequential-elements
                              (btn-minus #(on-change (sequential-remove-at value i)))
                              (edit (mu/get schema i) v #(on-change (sequential-update-at value i %)))])
                           value)
@@ -320,7 +322,7 @@
    (bracket "#{" "}"
             [:div
              (map (fn [v]
-                    [:div {:style {:display :flex}}
+                    [:div.malli-editor-set-elements
                      (btn-minus #(on-change (disj value v)))
                      (edit (mu/get schema 0) v #(on-change (-> value (disj v) (conj %))))])
                   value)
