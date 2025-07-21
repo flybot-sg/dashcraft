@@ -6,6 +6,7 @@
 .malli-editor-extra-keys-title {
     color: #8f8dac;
     display: flex;
+    flex-wrap: wrap;
 }
 
 .malli-editor-btn span {

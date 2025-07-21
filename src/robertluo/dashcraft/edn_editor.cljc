@@ -136,10 +136,9 @@
 
 (defmethod edit :maybe [schema value on-change]
   (let [child (first (m/children schema))]
-    [:div.malli-editor-maybe
-     (if (nil? value)
-       (btn-plus #(on-change (default-value child)))
-       [:div (btn-minus #(on-change nil)) (edit child value on-change)])]))
+    (if (nil? value)
+      [:div.malli-editor-maybe (btn-plus #(on-change (default-value child))) [:div (pr-str value)]]
+      [:div.malli-editor-maybe (btn-minus #(on-change nil)) (edit child value on-change)])))
 
 (defmethod edit :map [schema value on-change]
   (let [map-schema (m/children schema)
@@ -299,7 +298,7 @@
    (bracket "[" "]"
             [:div
              (map-indexed (fn [i v]
-                            [:div.malli-editor-vector-elements
+                            [:div.malli-editor-vector-elements {:replicant/key i}
                              (btn-minus #(on-change (dissocv value i)))
                              (edit (mu/get schema i) v #(on-change (assoc value i %)))])
                           value)
@@ -311,7 +310,7 @@
             (if (list? value) ")" "]")
             [:div
              (map-indexed (fn [i v]
-                            [:div.malli-editor-sequential-elements
+                            [:div.malli-editor-sequential-elements {:replicant/key i}
                              (btn-minus #(on-change (sequential-remove-at value i)))
                              (edit (mu/get schema i) v #(on-change (sequential-update-at value i %)))])
                           value)
@@ -322,7 +321,7 @@
    (bracket "#{" "}"
             [:div
              (map (fn [v]
-                    [:div.malli-editor-set-elements
+                    [:div.malli-editor-set-elements {:replicant/key v}
                      (btn-minus #(on-change (disj value v)))
                      (edit (mu/get schema 0) v #(on-change (-> value (disj v) (conj %))))])
                   value)
