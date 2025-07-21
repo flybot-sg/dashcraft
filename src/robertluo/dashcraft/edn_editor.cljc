@@ -379,22 +379,24 @@
 
 (defmethod edit :multi [schema value on-change]
   (let [nom (name (gensym "multi-schema"))
-        dispatch-key (:dispatch (m/properties schema))
-        children (for [[dispatch _ schema] (m/children schema)
-                       :when (not= ::m/default dispatch)]
+        dispatch-fn (:dispatch (m/properties schema))
+        children (for [[dispatch _ schema] (m/children schema)]
                    {:dispatch dispatch
                     :schema schema
                     :label (pr-str dispatch)
-                    :selected (= dispatch (dispatch-key value))})
-        selected (first (filter :selected children))]
+                    :valid (m/validate schema value)
+                    :selected (= dispatch (dispatch-fn value))})
+        selected (or
+                  (first (filter :selected children))
+                  (first (filter :valid children)))]
     [:div.malli-editor-multi
      (into [:div.malli-editor-multi-choices ";;"]
            (for [c children]
              (let [id (str nom "--" (:label c))]
                [:div
                 [:input {:type :radio :id id :name nom
-                         :checked (:selected c)
-                         :on {:change (if (:selected c)
+                         :checked (= selected c)
+                         :on {:change (if (= selected c)
                                         (constantly nil)
                                         #(on-change (default-value (:schema c))))}}]
                 [:label {:for id} (:label c)]])))
