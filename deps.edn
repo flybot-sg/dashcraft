@@ -15,4 +15,4 @@
            :nrepl {:jvm-opts ["-Djdk.attach.allowAttachSelf"]
                    :main-opts ["-m" "nrepl.cmdline" "--port" "7888"]}}
           :test {:exec-fn   com.mjdowney.rich-comment-tests.test-runner/run-tests-in-file-tree!
-                  :exec-args {:dirs #{"src"}}}}
+                 :exec-args {:dirs #{"src"}}}}
