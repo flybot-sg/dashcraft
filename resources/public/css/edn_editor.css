@@ -19,6 +19,10 @@
     border-radius: 0.1em;
 }
 
+.malli-editor-btn span:hover {
+    background: #9b9ab5;
+}
+
 .malli-editor {
     font-family: monospace;
     color: #151640;
@@ -32,6 +36,11 @@
     border: 1px solid #b9b8cb;
 }
 
+.malli-editor input:focus {
+    outline: none;
+    border-color: #8887a3;
+}
+
 .malli-editor-invalid {
     background: #fc9483;
 }
@@ -39,6 +48,11 @@
 .malli-editor select {
     font-family: inherit;
     font-size: inherit;
+}
+
+.malli-editor select:focus {
+    outline: none;
+    border-color: #8887a3;
 }
 
 .malli-editor-example h2 {
@@ -66,4 +80,14 @@
 .malli-editor-add-keys {
     display: flex;
     flex-flow: row wrap;
+}
+
+.malli-editor-multi-select {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.malli-editor-dispatch-key {
+    color: #8f8dac;
 }

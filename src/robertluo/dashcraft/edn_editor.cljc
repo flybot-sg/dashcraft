@@ -15,7 +15,7 @@
 
 (defmulti default-value (fn [schema]
                           (when schema
-                            (:type (m/ast schema)))))
+                            (m/type schema))))
 
 (defmethod default-value :default    [_] nil)
 (defmethod default-value :string     [_] "")
@@ -72,7 +72,7 @@
 
 (defmulti edit (fn [schema _value _on-change]
                  (when schema
-                   (:type (m/ast schema))))) ;; TODO is there a simpler way to check the type?
+                   (m/type schema))))
 
 (defmethod edit :default [schema value _on-change]
   [:div
@@ -114,7 +114,7 @@
   [:div.malli-editor-enum
    (into [:select {:on {:change #(on-change (-> % .-target .-value edn/read-string))}}]
          (for [v (m/children schema)]
-           [:option {:selected (= value v)}
+           [:option {:value (pr-str v) :selected (= value v)}
             (pr-str v)]))])
 
 (defn bracket [open close contents]
@@ -153,7 +153,7 @@
               [:div
                (for [k present-keys]
                  (let [[_ properties value-schema] (mu/find schema k)]
-                   [:div.malli-editor-key-value
+                   [:div.malli-editor-key-value {:replicant/key k}
                     [:div.malli-editor-key (pr-str k)]
                     (when (:optional properties)
                       (btn-minus #(on-change (dissoc value k))))
@@ -377,20 +377,22 @@
        (edit (:schema selected) value on-change))]))
 
 (defmethod edit :multi [schema value on-change]
-  (let [dispatch-fn (:dispatch (m/properties schema))
-        current-dispatch (dispatch-fn value)
+  (let [dispatch-key (:dispatch (m/properties schema))
+        current-dispatch (dispatch-key value)
         matched-dispatch (if (some #(= current-dispatch (first %)) (m/children schema))
                            current-dispatch
                            (ffirst (m/children schema)))]
     [:div.malli-editor-multi
-     [:select
-      {:on {:change (fn [e]
-                      (let [selected-dispatch (-> e .-target .-value edn/read-string)
-                            value-schema (mu/get schema selected-dispatch)]
-                        (on-change (default-value value-schema))))}}
-      (for [[dispatch _ _] (m/children schema)]
-        [:option {:value (pr-str dispatch) :selected (= dispatch matched-dispatch)}
-         (pr-str dispatch)])]
+     [:div.malli-editor-multi-select
+      [:span.malli-editor-dispatch-key (pr-str dispatch-key)]
+      [:select
+       {:on {:change (fn [e]
+                       (let [selected-dispatch (-> e .-target .-value edn/read-string)
+                             value-schema (mu/get schema selected-dispatch)]
+                         (on-change (default-value value-schema))))}}
+       (for [[dispatch _ _] (m/children schema)]
+         [:option {:value (pr-str dispatch) :selected (= dispatch matched-dispatch)}
+          (pr-str dispatch)])]]
      (edit (mu/get schema matched-dispatch) value on-change)]))
 
 (defmethod edit :schema [schema value on-change]
