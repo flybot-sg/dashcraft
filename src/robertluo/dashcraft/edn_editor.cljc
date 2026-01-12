@@ -338,8 +338,6 @@
   (let [nom (name (gensym "orn-schema"))
         p (m/parse schema value)
         matched-case (if (= :malli.core/invalid p)
-                       ;; just pick the first case if input is invalid
-                       ;; TODO figure out what to do here 
                        (->> schema m/entries first key)
                        (:key p))]
     [:div.malli-editor-orn
@@ -351,7 +349,7 @@
                 [:input {:type :radio :id id :name nom
                          :checked (= k matched-case)
                          :on {:change (if (= k matched-case)
-                                        (constantly nil) ;; silence react warning by always having a callback
+                                        (constantly nil)
                                         #(on-change (default-value value-schema)))}}]
                 [:label {:for id} label]])))
      (edit (mu/get schema matched-case) value on-change)]))
@@ -372,37 +370,28 @@
                 [:input {:type :radio :id id :name nom
                          :checked (= selected c)
                          :on {:change (if (= selected c)
-                                        (constantly nil) ;; silence reagent warning by always having a callback
+                                        (constantly nil)
                                         #(on-change (default-value (:schema c))))}}]
                 [:label {:for id} (:label c)]])))
      (when selected
        (edit (:schema selected) value on-change))]))
 
 (defmethod edit :multi [schema value on-change]
-  (let [nom (name (gensym "multi-schema"))
-        dispatch-fn (:dispatch (m/properties schema))
-        children (for [[dispatch _ schema] (m/children schema)]
-                   {:dispatch dispatch
-                    :schema schema
-                    :label (pr-str dispatch)
-                    :valid (m/validate schema value)
-                    :selected (= dispatch (dispatch-fn value))})
-        selected (or
-                  (first (filter :selected children))
-                  (first (filter :valid children)))]
+  (let [dispatch-fn (:dispatch (m/properties schema))
+        current-dispatch (dispatch-fn value)
+        matched-dispatch (if (some #(= current-dispatch (first %)) (m/children schema))
+                           current-dispatch
+                           (ffirst (m/children schema)))]
     [:div.malli-editor-multi
-     (into [:div.malli-editor-multi-choices ";;"]
-           (for [c children]
-             (let [id (str nom "--" (:label c))]
-               [:div
-                [:input {:type :radio :id id :name nom
-                         :checked (= selected c)
-                         :on {:change (if (= selected c)
-                                        (constantly nil)
-                                        #(on-change (default-value (:schema c))))}}]
-                [:label {:for id} (:label c)]])))
-     (when selected
-       (edit (:schema selected) value on-change))]))
+     [:select
+      {:on {:change (fn [e]
+                      (let [selected-dispatch (-> e .-target .-value edn/read-string)
+                            value-schema (mu/get schema selected-dispatch)]
+                        (on-change (default-value value-schema))))}}
+      (for [[dispatch _ _] (m/children schema)]
+        [:option {:value (pr-str dispatch) :selected (= dispatch matched-dispatch)}
+         (pr-str dispatch)])]
+     (edit (mu/get schema matched-dispatch) value on-change)]))
 
 (defmethod edit :schema [schema value on-change]
   (edit (m/deref schema) value on-change))
