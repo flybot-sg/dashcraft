@@ -335,44 +335,40 @@
      (edit primary-schema value on-change)]))
 
 (defmethod edit :orn [schema value on-change]
-  (let [nom (name (gensym "orn-schema"))
-        p (m/parse schema value)
+  (let [p (m/parse schema value)
         matched-case (if (= :malli.core/invalid p)
                        (->> schema m/entries first key)
                        (:key p))]
     [:div.malli-editor-orn
-     (into [:div.malli-editor-orn-choices ";;"]
-           (for [[k _p value-schema] (m/children schema)]
-             (let [label (pr-str k)
-                   id (str nom "--" label)]
-               [:div
-                [:input {:type :radio :id id :name nom
-                         :checked (= k matched-case)
-                         :on {:change (if (= k matched-case)
-                                        (constantly nil)
-                                        #(on-change (default-value value-schema)))}}]
-                [:label {:for id} label]])))
+     [:select
+      {:on {:change (fn [e]
+                      (let [selected-key (-> e .-target .-value edn/read-string)
+                            value-schema (mu/get schema selected-key)]
+                        (on-change (default-value value-schema))))}}
+      (for [[k _ _] (m/children schema)]
+        [:option {:value (pr-str k) :selected (= k matched-case)}
+         (pr-str k)])]
      (edit (mu/get schema matched-case) value on-change)]))
 
 (defmethod edit :or [schema value on-change]
-  (let [nom (name (gensym "or-schema"))
-        children (for [c (m/children schema)]
-                   {:schema c
-                    :valid (m/validate c value)
-                    :label (pr-str (:type (m/ast c)))})
-        selected (or (first (filter :valid children))
-                     (first children))]
+  (let [children (m/children schema)
+        indexed-children (map-indexed (fn [i c]
+                                        {:idx i
+                                         :schema c
+                                         :valid (m/validate c value)
+                                         :label (pr-str (:type (m/ast c)))})
+                                      children)
+        selected (or (first (filter :valid indexed-children))
+                     (first indexed-children))]
     [:div.malli-editor-or
-     (into [:div.malli-editor-or-choices ";;"]
-           (for [c children]
-             (let [id (str nom "--" (:label c))]
-               [:div
-                [:input {:type :radio :id id :name nom
-                         :checked (= selected c)
-                         :on {:change (if (= selected c)
-                                        (constantly nil)
-                                        #(on-change (default-value (:schema c))))}}]
-                [:label {:for id} (:label c)]])))
+     [:select.malli-editor-or-select
+      {:on {:change (fn [e]
+                      (let [selected-idx (-> e .-target .-value edn/read-string)
+                            value-schema (nth children selected-idx)]
+                        (on-change (default-value value-schema))))}}
+      (for [{:keys [idx label]} indexed-children]
+        [:option {:value idx :selected (= idx (:idx selected))}
+         label])]
      (when selected
        (edit (:schema selected) value on-change))]))
 

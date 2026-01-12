@@ -168,8 +168,8 @@
    {:config
     {:css-paths ["/css/chart.css" "/css/data_table.css"
                  "/css/edn_editor.css" "/css/form.css"
-                 "/css/loading.css" "/css/error_aware.css"]}
-    :viewport/defaults
-    {:background/background-color "#fdeddd"}}))
+                 "/css/loading.css" "/css/error_aware.css"]
+     :viewport/defaults
+     {:background/background-color "#fdeddd"}}}))
 
 (main)
