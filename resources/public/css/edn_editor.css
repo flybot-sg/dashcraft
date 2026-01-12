@@ -142,7 +142,7 @@
     gap: 4px;
 }
 
-.malli-editor-union-select {
+.malli-editor-multi-select {
     display: flex;
     align-items: center;
     gap: 0.5em;
