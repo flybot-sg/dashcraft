@@ -374,7 +374,7 @@
 
 (defmethod edit :multi [schema value on-change]
   (let [dispatch-key (:dispatch (m/properties schema))
-        current-dispatch (dispatch-key value)
+        current-dispatch (get value dispatch-key)
         matched-dispatch (if (some #(= current-dispatch (first %)) (m/children schema))
                            current-dispatch
                            (ffirst (m/children schema)))]
