@@ -201,7 +201,7 @@
     (dissocv coll idx)
 
     (list? coll)
-    (keep-indexed #(when-not (= idx %1) %2) coll)))
+    (apply list (keep-indexed #(when-not (= idx %1) %2) coll))))
 
 ^:rct/test
 (comment
@@ -268,7 +268,7 @@
   [coll val]
   (cond
     (vector? coll) (conj coll val)
-    (list? coll) (concat coll (list val))))
+    (list? coll) (apply list (concat coll (list val)))))
 
 ^:rct/test
 (comment
@@ -356,7 +356,7 @@
                                         {:idx i
                                          :schema c
                                          :valid (m/validate c value)
-                                         :label (pr-str (:type (m/ast c)))})
+                                         :label (pr-str (m/type c))})
                                       children)
         selected (or (first (filter :valid indexed-children))
                      (first indexed-children))]
