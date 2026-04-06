@@ -1,43 +1,153 @@
-/* reference styles for edn-editor */
+/* ===========================================
+   EDN Editor Styles
+   =========================================== */
 
-.malli-editor-or-choices,
-.malli-editor-orn-choices,
-.malli-editor-extra-keys-title {
-    color: #8f8dac;
-}
-
-.malli-editor-btn a:link,
-.malli-editor-btn a:visited {
-    color: white;
-    text-decoration: none;
-    padding-left: 0.5em;
-    padding-right: 0.5em;
-    background: #b9b8cb;
-    border-radius: 0.1em;
-}
-
+/* --- Main Container --- */
 .malli-editor {
     font-family: monospace;
     color: #151640;
-    line-height: 2;
+    line-height: 1.8;
 }
 
+/* --- Form Controls: Inputs --- */
 .malli-editor input {
     font-family: inherit;
     font-size: inherit;
     color: inherit;
     border: 1px solid #b9b8cb;
+    border-radius: 3px;
+    padding: 2px 4px;
+    transition: border-color 0.15s ease;
 }
 
-.malli-editor-invalid {
-    background: #fc9483
+.malli-editor input:focus {
+    outline: none;
+    border-color: #8887a3;
+    box-shadow: 0 0 0 2px rgba(136, 135, 163, 0.15);
 }
 
+/* --- Form Controls: Selects --- */
 .malli-editor select {
     font-family: inherit;
     font-size: inherit;
+    border: 1px solid #b9b8cb;
+    border-radius: 3px;
+    padding: 2px 4px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
 }
 
-.malli-editor-example h2 {
-    font-family: monospace;
+.malli-editor select:focus {
+    outline: none;
+    border-color: #8887a3;
+    box-shadow: 0 0 0 2px rgba(136, 135, 163, 0.15);
+}
+
+/* --- Form Controls: Checkboxes --- */
+.malli-editor input[type="checkbox"] {
+    cursor: pointer;
+}
+
+/* --- Validation State --- */
+.malli-editor-invalid {
+    background: #fc9483;
+    border-color: #e57373 !important;
+}
+
+/* --- Buttons (+/-) --- */
+.malli-editor-btn span {
+    cursor: pointer;
+    color: white;
+    padding: 1px 6px;
+    background: #b9b8cb;
+    border-radius: 3px;
+    font-size: 0.9em;
+    transition: background 0.15s ease;
+}
+
+.malli-editor-btn span:hover {
+    background: #9b9ab5;
+}
+
+/* --- Bracket Containers --- */
+.malli-editor-brackets {
+    display: flex;
+    align-items: flex-start;
+}
+
+.malli-editor-bracket-open,
+.malli-editor-bracket-close {
+    color: #6b7280;
+}
+
+.malli-editor-bracket-close {
+    align-self: flex-end;
+}
+
+/* --- Map Key-Value Pairs --- */
+.malli-editor-key-value {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.malli-editor-value {
+    margin-left: 0.5em;
+}
+
+/* --- Collection Elements --- */
+.malli-editor-vector-elements,
+.malli-editor-set-elements,
+.malli-editor-sequential-elements,
+.malli-editor-extra-keys-elements {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+/* --- Maybe (Optional) --- */
+.malli-editor-maybe {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+/* --- Add Keys Section --- */
+.malli-editor-add-keys {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+/* --- Extra Keys Section --- */
+.malli-editor-extra-keys {
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px dashed #d1d5db;
+    opacity: 0.8;
+}
+
+.malli-editor-extra-keys-title {
+    color: #8f8dac;
+    font-size: 0.9em;
+}
+
+/* --- Union Types (or/orn/multi) --- */
+.malli-editor-or,
+.malli-editor-orn,
+.malli-editor-multi {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.malli-editor-multi-select {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.malli-editor-dispatch-key {
+    color: #8f8dac;
 }

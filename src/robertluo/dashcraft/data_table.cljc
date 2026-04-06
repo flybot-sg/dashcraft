@@ -42,8 +42,7 @@ returns `data` specified by `grouping` spec:
            {:name "John" :sex :male :balance -456 :age 45}]}
    {:column :sex :aggregations [[:balance] [:age]]}) ; =>>
   {:columns #((set %) ::group) ;; new column added
-   :rows [{::group :male, :children #(= 2 (count %)), :balance 1322986, :age 68}]}
-  )
+   :rows [{::group :male, :children #(= 2 (count %)), :balance 1322986, :age 68}]})
 
 (defn ^:no-doc switch-sorting
   [sorting column]
@@ -51,7 +50,7 @@ returns `data` specified by `grouping` spec:
       (assoc :column column)
       (update :order (fn [o] (case o :asc :desc :desc nil :asc)))))
 
-(defalias 
+(defalias
   ^{:doc "
 A table header component.
 Special attributes:
@@ -68,8 +67,8 @@ Can have children which inherites `::column`
    [:span (or (label-of column) " ")]
    (map #(hiccup/update-attrs % assoc ::column column) children)])
 
-(defalias 
-  ^{:doc 
+(defalias
+  ^{:doc
     "
 A sort button for `th`, generating sorting preference from the user.
 Special attributes:
@@ -81,7 +80,7 @@ Special attributes:
    - `order` the order of the sort, `:asc`, `:desc` and nil
    - `sortable` a predict accept a column and returns true if the column support sorting
 "}
-  sort-button 
+  sort-button
   [{::keys [column on-sort sorting] :as attrs}]
   (let [{sort-clm :column order :order sortable :sortable :or {sortable (constantly true)}} sorting
         sortable? (sortable column)]
@@ -92,7 +91,7 @@ Special attributes:
        sortable? " ↕️"
        :else " ")]))
 
-(defalias 
+(defalias
   ^{:doc "
 Display cell of data table.
         
@@ -105,8 +104,8 @@ special attributes:
 Can have children who inherit `::column` and `::cell`.
       "}
   td
-  [{::keys [column cell label-of class-of] 
-    :or {class-of (constantly []) 
+  [{::keys [column cell label-of class-of]
+    :or {class-of (constantly [])
          label-of (fn [_ v] (str v))}
     :as attrs}
    children]
@@ -122,24 +121,25 @@ Can have children who inherit `::column` and `::cell`.
    (sort-rows rows sorting nil))
   ([rows sorting drill-down]
    (let [{sort-clm :column order :order} sorting
-         f #(sort-by sort-clm (if (= order :asc) < >) %)]
-     (cond->> rows 
+         key-accessor (fn [m]
+                        (get m sort-clm))
+         f #(sort-by key-accessor (if (= order :asc) < >) %)]
+     (cond->> rows
        (and sort-clm order) f
        drill-down (map (fn [r] (update r drill-down sort-rows sorting drill-down)))))))
 
 ^:rct/test
 (comment
-  (sort-rows 
+  (sort-rows
    [{::group :male, :children [{:name "Robert", :sex :male, :age 23, :balance 1323442}
                                {:name "John", :sex :male, :balance -456, :age 45}], :balance 1322986, :age 68}
     {::group :female, :children [{:name "Jane", :sex :female, :age 15, :balance 61923}], :balance 61923, :age 15}]
    {:column :balance :order :desc}
    :children) ;=>>
   [{::group :male :children [{:name "Robert"} {:name "John"}]}
-   {::group :female :children [{:name "Jane"}]}] 
-  )
+   {::group :female :children [{:name "Jane"}]}])
 
-(defalias 
+(defalias
   ^{:doc "
 Data table component.
 
@@ -154,7 +154,7 @@ Chidlren:
   - a table-header default to `th`
   - a table-cell default to `td`
 "}
-  table 
+  table
   [{::keys [data drill-down] :as attrs}
    [table-header table-cell]]
   (let [{:keys [columns rows]} data]
