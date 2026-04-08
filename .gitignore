@@ -1,4 +1,3 @@
-bun.lock
 .calva/
 .clj-kondo/*/
 .lsp/
@@ -6,6 +5,7 @@ bun.lock
 .shadow-cljs/
 node_modules/
 target/
+resources/public/js/
 .cpcache/
 .nrepl-*
 .vscode/
