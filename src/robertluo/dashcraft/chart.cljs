@@ -30,6 +30,7 @@ A chart component using ECharts as underlying.
 ## Special attributes
 
  - `::data` contains `:columns` and `:rows` as in data-table
+ - `::theme` optional ECharts theme, e.g. `:dark` or `:light` (default: light)
  - `::on-event` event handler spec, it is a map of notification name to tuples as following:
    - event type, in keyword. e.g. `:click`
    - event query, a map corresponding to mouse event query. e.g. `:seriesName \"2015\"
@@ -45,26 +46,33 @@ the rest of data will send to echarts as options.
 See https://echarts.apache.org/en/option.html for details.
    "}
   chart
-  [{::keys [data notify] :as attrs}]
-  (let [cht-js (-> data data->chart clj->js)]
+  [{::keys [data notify theme] :as attrs}]
+  (let [cht-js   (-> data data->chart clj->js)
+        theme-js (some-> theme name)
+        init-chart!
+        (fn [node]
+          (let [chart (echarts/init node theme-js)]
+            (.setOption chart cht-js)
+            (doseq [[notify-name [chart-evt query]] notify]
+              (.on chart (name chart-evt)
+                   (clj->js query)
+                   (fn [params]
+                     (.dispatchEvent node (u/custom-event notify-name params)))))
+            chart))]
     [:div.echart
      (merge attrs
             {:replicant/on-mount
              (fn [{:replicant/keys [node remember]}]
-               (let [chart (echarts/init node)]
-                 (.setOption chart cht-js)
-                 (doseq [[notify-name [chart-evt query]] notify]
-                   (.on chart (name chart-evt)
-                        (clj->js query)
-                        (fn [params]
-                          (.dispatchEvent node (u/custom-event notify-name params)))))
-                 (remember chart)))
+               (remember {:chart (init-chart! node) :theme theme-js}))
              :replicant/on-update
-             (fn [{:replicant/keys [memory]}]
-               (.setOption memory cht-js))
+             (fn [{:replicant/keys [node memory remember]}]
+               (if (= theme-js (:theme memory))
+                 (.setOption (:chart memory) cht-js)
+                 (do (.dispose (:chart memory))
+                     (remember {:chart (init-chart! node) :theme theme-js}))))
              :replicant/on-unmount
              (fn [{:replicant/keys [memory]}]
-               (.dispose memory))})]))
+               (.dispose (:chart memory)))})]))
 
 (defn inc-take [col]
   (->> (iterate inc 0) (take-while #(<= % (count col))) (map #(vec (take % col)))))
@@ -106,7 +114,7 @@ Special attributes:
   - `::label-of` a function accept a record and return the navigation bar label
    "}
   drill-down
-  [{::keys [data on-drill label-of] :as attrs}]
+  [{::keys [data on-drill label-of theme] :as attrs}]
   (let [{:keys [path drill-down]
          :or   {path [] drill-down :children}} data
         get-current (partial get-current drill-down)]
@@ -115,6 +123,7 @@ Special attributes:
                    ::on-click (fn [idx] (on-drill idx))
                    ::label-of (fn [p] (when label-of (label-of (get-current (:rows data) p))))}]
      [chart {::data (update data :rows #(cond-> (get-current % path) (seq path) drill-down))
+             ::theme theme
              ::notify {:notify [:click {}]}
              :on {:notify (fn [evt]
                             (let [idx (-> evt .-detail (js->clj :keywordize-keys true) :dataIndex)]
