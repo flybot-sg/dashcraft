@@ -1,28 +1,40 @@
 {:pods {org.babashka/fswatcher {:version "0.0.5"}}
  :tasks
- {clean    {:doc      "Clean project"
-            :requires ([babashka.fs :as fs])
-            :task     (doseq [dir ["target" "node_modules"]] (fs/delete-tree dir))}
-  -prepare {:doc  "Prepare"
-            :task (shell "bun update")}
-  test     {:doc "Run tests"
-            :task (clojure "-X:dev:test")}
-  watch    {:doc "Watch test for developing"
-            :depends [test]
-            :requires ([pod.babashka.fswatcher :as fw])
-            :task
-            (loop [p (promise)]
-              (println "\nWatching tests...")
-              (fw/watch "src"
-                        (fn [evt]
-                          (when (#{:write :chmod} (:type evt))
-                            (try
-                              (run 'test)
-                              (catch Exception _ nil)
-                              (finally (deliver p :done)))))
-                        {:recursive true})
-              (deref p)
-              (recur (promise)))}
-  dev      {:doc     "Invoke a dev repl"
-            :depends [-prepare]
-            :task    (clojure "-M:dev -m nrepl.cmdline --port 7888 --middleware \"[cider.nrepl/cider-middleware cider.piggieback/wrap-cljs-repl]]\"")}}}
+ {clean {:doc      "Clean build artifacts"
+         :requires ([babashka.fs :as fs])
+         :task     (doseq [dir ["target" ".shadow-cljs" ".cpcache"
+                                "resources/public/js"]]
+                     (fs/delete-tree dir))}
+
+  test {:doc  "Run tests"
+        :task (clojure "-X:test")}
+
+  watch-tests
+  {:doc      "Watch src and re-run tests on change"
+   :depends  [test]
+   :requires ([pod.babashka.fswatcher :as fw])
+   :task
+   (loop [p (promise)]
+     (println "\nWatching tests...")
+     (fw/watch "src"
+               (fn [evt]
+                 (when (#{:write :chmod} (:type evt))
+                   (try (run 'test)
+                        (catch Exception _ nil)
+                        (finally (deliver p :done)))))
+               {:recursive true})
+     (deref p)
+     (recur (promise)))}
+
+  -prepare {:doc  "Install npm dependencies"
+            :task (shell "bun install")}
+
+  dev {:doc     "Start nREPL for development. Connect editor, then (start!)"
+       :depends [-prepare]
+       :task    (clojure "-M:dev -m nrepl.cmdline --middleware \"[shadow.cljs.devtools.server.nrepl/middleware,cider.nrepl/cider-middleware]\"")}
+
+  watch {:doc  "Start shadow-cljs watch + dev server on port 3000 (standalone, no REPL)"
+         :task (shell "npx shadow-cljs -A:dev watch portfolio")}
+
+  outdated {:doc  "Show outdated dependencies"
+            :task (clojure "-M:outdated")}}}

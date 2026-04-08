@@ -1,0 +1,9 @@
+{:deps true
+ :deps-aliases [:dev]
+ :dev-http {3000 ["resources/public" "classpath:public"]}
+ :nrepl {:port 0}
+ :builds
+ {:portfolio {:target :browser
+              :output-dir "resources/public/js/portfolio"
+              :asset-path "/js/portfolio"
+              :modules {:main {:init-fn dashcraft.scenes/main}}}}}
