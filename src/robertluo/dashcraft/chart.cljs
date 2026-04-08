@@ -1,15 +1,17 @@
 (ns robertluo.dashcraft.chart
   (:require
-   [replicant.alias :refer [defalias]] 
+   [replicant.alias :refer [defalias]]
    [robertluo.dashcraft.util :as u]
    [echarts]))
 
 (defn data->chart
   "turns clojure data into echart data"
   [{:keys [columns rows] :as data}]
-  (-> data 
-      (merge {:dataset {:dimensions columns :source (map #(map (fn [c] (get % c)) columns) rows)}})
-      (dissoc :columns :rows)))
+  (if (and columns rows)
+    (-> data
+        (merge {:dataset {:dimensions columns :source (map #(map (fn [c] (get % c)) columns) rows)}})
+        (dissoc :columns :rows))
+    data))
 
 (comment
   (data->chart
@@ -20,9 +22,8 @@
     :xAxis {:type :category}
     :yAxis {}
     :series [{:type :bar} {:type :bar}]}))
-  
 
-(defalias 
+(defalias
   ^{:doc "
 A chart component using ECharts as underlying.
 
@@ -52,7 +53,7 @@ See https://echarts.apache.org/en/option.html for details.
              (fn [{:replicant/keys [node remember]}]
                (let [chart (echarts/init node)]
                  (.setOption chart cht-js)
-                 (doseq [[notify-name [chart-evt query]] notify] 
+                 (doseq [[notify-name [chart-evt query]] notify]
                    (.on chart (name chart-evt)
                         (clj->js query)
                         (fn [params]
@@ -70,11 +71,10 @@ See https://echarts.apache.org/en/option.html for details.
 
 (comment
   (inc-take [0 1 0])) ;=> [] [0 1] [0 1 1] 
-  
 
 (defalias
-  ^{:doc 
-"
+  ^{:doc
+    "
 A bread crumb component to display path like data.
 
 Special attributes:
@@ -89,13 +89,13 @@ Special attributes:
    (for [item items]
      [:li [:a {:href "#" :on {:click (fn [_] (on-click item))}} (or (label-of item) "#")]])])
 
-(defn get-current 
+(defn get-current
   [drill-down rows path]
   (->>  (map (fn [p] #(get % p)) path)
         (interpose drill-down)
         (reduce (fn [r f] (f r)) rows)))
 
-(defalias 
+(defalias
   ^{:doc "
 A chart can be drill down on `:path` inside `::data`.
 Special attributes:
@@ -108,7 +108,7 @@ Special attributes:
   drill-down
   [{::keys [data on-drill label-of] :as attrs}]
   (let [{:keys [path drill-down]
-         :or   {path [] drill-down :children}} data 
+         :or   {path [] drill-down :children}} data
         get-current (partial get-current drill-down)]
     [:div attrs
      [bread-crumb {::items (inc-take path)
@@ -116,8 +116,9 @@ Special attributes:
                    ::label-of (fn [p] (when label-of (label-of (get-current (:rows data) p))))}]
      [chart {::data (update data :rows #(cond-> (get-current % path) (seq path) drill-down))
              ::notify {:notify [:click {}]}
-             :on {:notify (fn [evt] 
-                            (when-let [idx (-> evt .-detail (js->clj :keywordize-keys true) :data :dataIndex)]
-                              (let [new-p (conj path idx)
-                                    children (-> data :rows (get-current new-p) drill-down)]
-                                (when (seq children) (on-drill new-p)))))}}]]))
+             :on {:notify (fn [evt]
+                            (let [idx (-> evt .-detail (js->clj :keywordize-keys true) :dataIndex)]
+                              (when (some? idx)
+                                (let [new-p (conj path idx)
+                                      children (-> data :rows (get-current new-p) drill-down)]
+                                  (when (seq children) (on-drill new-p))))))}}]]))
