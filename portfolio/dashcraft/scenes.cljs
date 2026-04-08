@@ -22,18 +22,27 @@
   [state]
   [ch/chart
    {::ch/data @state
-    ::ch/notify {:2015 [:click {:seriesName "2015"}]}
-    :on {:2015 (fn [_] (swap! state assoc-in [:series 1 :type] :line))}}])
+    ::ch/notify {:toggle [:click {:seriesName "2015"}]}
+    :on {:toggle (fn [_]
+                   (swap! state update-in [:series 1 :type]
+                          #(if (= :line %) :bar :line)))}}])
 
 (defscene drill-down-chart
   :params (atom {:columns [:product "2015" "2016"],
-                 :rows [{:product "Shirts",    "2015" 15.3, "2016" 5}
-                        {:product "Cardigans", "2015" 9.1,  "2016" 20,
-                         :children [{:product "English" "2015" 1.5, "2016" 5
-                                     :children [{:product "London" "2015" 0.1}
+                 :rows [{:product "Shirts" "2015" 15.3 "2016" 5
+                         :children [{:product "Cotton"  "2015" 8.2 "2016" 3}
+                                    {:product "Silk"    "2015" 4.1 "2016" 1.2}
+                                    {:product "Linen"   "2015" 3.0 "2016" 0.8}]}
+                        {:product "Cardigans" "2015" 9.1 "2016" 20
+                         :children [{:product "English" "2015" 1.5 "2016" 5
+                                     :children [{:product "London"    "2015" 0.1}
                                                 {:product "Liverpool" "2015" 1.4}]}
-                                    {:product "Scotish" "2015" 4.8, "2016" 12}]}
-                        {:product "Socks",     "2015" 4.8,  "2016" 25}]
+                                    {:product "Scottish" "2015" 4.8 "2016" 12}
+                                    {:product "Irish"    "2015" 2.8 "2016" 3}]}
+                        {:product "Socks" "2015" 4.8 "2016" 25
+                         :children [{:product "Ankle"  "2015" 2.1 "2016" 15}
+                                    {:product "Crew"   "2015" 1.9 "2016" 8}
+                                    {:product "Knee"   "2015" 0.8 "2016" 2}]}]
                  :drill-down :children
                  :xAxis {:type :category :show false}
                  :yAxis {}
@@ -172,4 +181,3 @@
      :viewport/defaults
      {:background/background-color "#fdeddd"}}}))
 
-(main)
